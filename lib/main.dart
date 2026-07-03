@@ -47,7 +47,17 @@ void _setupErrorHandling() {
 
 void main() {
   _setupErrorHandling();
-  runApp(const ColoringWorld());
+  runApp(const ErrorBoundary(child: ColoringWorld()));
+}
+
+class ErrorBoundary extends StatelessWidget {
+  final Widget child;
+  const ErrorBoundary({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return child;
+  }
 }
 
 class ColoringWorld extends StatelessWidget {

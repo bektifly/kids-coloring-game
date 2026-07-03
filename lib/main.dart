@@ -5,7 +5,48 @@ import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
 
+
+// Crash handler to show errors on screen
+class ErrorScreen extends StatelessWidget {
+  final String error;
+  const ErrorScreen({super.key, required this.error});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: Scaffold(
+        appBar: AppBar(title: const Text('Crash Report')),
+        body: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('App crashed with error:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 16),
+              Expanded(child: SingleChildScrollView(child: Text(error, style: const TextStyle(fontFamily: 'monospace'))),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+void _setupErrorHandling() {
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('FlutterError: ${details.exception}');
+    debugPrint('Stack trace: ${details.stack}');
+  };
+  PlatformDispatcher.instance.onError = (error, stack) {
+    debugPrint('PlatformDispatcher error: $error');
+    debugPrint('Stack trace: $stack');
+    return false;
+  }
+}
+
 void main() {
+  _setupErrorHandling();
   runApp(const ColoringWorld());
 }
 

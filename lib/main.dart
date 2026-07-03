@@ -1153,7 +1153,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
     final w = size.width, h = size.height;
     canvas.drawCircle(Offset(w * 0.5, h * 0.4), w * 0.2, paint);
-    canvas.drawOval(Rect.fromLTWH(w * 0.35, h * 0.42), w * 0.3, h * 0.15), paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.35, h * 0.42, w * 0.3, h * 0.15), paint);
     canvas.drawCircle(Offset(w * 0.4, h * 0.38), w * 0.04, paint);
     canvas.drawCircle(Offset(w * 0.6, h * 0.38), w * 0.04, paint);
   }
@@ -1164,7 +1164,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     canvas.drawOval(Rect.fromLTWH(w * 0.2, h * 0.3, w * 0.6, h * 0.4), paint);
     canvas.drawCircle(Offset(w * 0.35, h * 0.35), w * 0.06, paint);
     canvas.drawCircle(Offset(w * 0.65, h * 0.35), w * 0.06, paint);
-    canvas.drawOval(Rect.fromLTWH(w * 0.4, h * 0.45), w * 0.2, h * 0.15), paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.4, h * 0.45, w * 0.2, h * 0.15), paint);
   }
 
   void _drawSheep(Canvas canvas, Size size) {

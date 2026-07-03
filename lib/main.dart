@@ -26,13 +26,23 @@ Future<void> _setPremiumUnlocked(bool value) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  AppDebugLog.add('main started');
   try {
+    AppDebugLog.add('init premium start');
     await _initPremiumState();
+    AppDebugLog.add('init premium done');
+    AppDebugLog.add('init MobileAds start');
     await MobileAds.instance.initialize();
+    AppDebugLog.add('init MobileAds done');
+    AppDebugLog.add('init IAP start');
     await InAppPurchase.instance.restorePurchases();
+    AppDebugLog.add('init IAP done');
   } catch (e) {
-    debugPrint('Init error: $e');
+    final msg = 'Init error: $e';
+    AppDebugLog.add(msg);
+    debugPrint(msg);
   }
+  AppDebugLog.add('runApp start');
   runApp(const ColoringWorld());
 }
 
@@ -1751,4 +1761,18 @@ Future<void> _purchasePremium(ProductDetails product) async {
   if (result == PurchaseStatus.purchased || result == PurchaseStatus.restored) {
     await _setPremiumUnlocked(true);
   }
+
+class AppDebugLog {
+  static const _max = 200;
+  static final List<String> _logs = [];
+
+  static void add(String msg) {
+    final ts = DateTime.now().toIso8601String().substring(11, 23);
+    _logs.insert(0, '$ts $msg');
+    if (_logs.length > _max) _logs.removeLast();
+  }
+
+  static List<String> get logs => List.unmodifiable(_logs);
+}
+
 }

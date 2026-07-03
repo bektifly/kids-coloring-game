@@ -50,7 +50,7 @@ class _MainMenuState extends State<MainMenu> {
           IconButton(
             icon: const Icon(Icons.leaderboard),
             onPressed: () => Navigator.push(
-              context, MaterialPageRoute(builder: (_) => const LeaderboardScreen()));
+              context, MaterialPageRoute(builder: (_) => const LeaderboardScreen())),
           )
         ],
       ),
@@ -620,7 +620,7 @@ class SketchPainter extends CustomPainter {
     final tempCanvas = Canvas(recorder);
     template.draw(tempCanvas, size);
     final picture = recorder.endRecording();
-    picture.toCanvas(canvas);
+    canvas.drawPicture(picture);
     canvas.drawCircle(Offset(20, size.height - 20), 16, Paint()..color = selectedColor);
     canvas.drawCircle(Offset(20, size.height - 20), 16, Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 2);
   }
@@ -711,7 +711,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           final parts = e.split('|');
           return {'score': int.parse(parts[0]), 'date': parts[1]};
         }).toList();
-        parsed.sort((a, b) => b['score'].compareTo(a['score']));
+        parsed.sort((a, b) => (b['score'] as int).compareTo(a['score'] as int));
         data[key.substring(12)] = parsed.take(10).toList();
       }
     }

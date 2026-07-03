@@ -26,9 +26,13 @@ Future<void> _setPremiumUnlocked(bool value) async {
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await _initPremiumState();
-  await MobileAds.instance.initialize();
-  await InAppPurchase.instance.restorePurchases();
+  try {
+    await _initPremiumState();
+    await MobileAds.instance.initialize();
+    await InAppPurchase.instance.restorePurchases();
+  } catch (e) {
+    debugPrint('Init error: $e');
+  }
   runApp(const ColoringWorld());
 }
 
@@ -1744,7 +1748,7 @@ Future<ProductDetails?> _findPremiumProduct() async {
 Future<void> _purchasePremium(ProductDetails product) async {
   final purchaseParam = PurchaseParam(productDetails: product);
   final result = await InAppPurchase.instance.buyNonConsumable(purchaseParam: purchaseParam);
-  if (result == PurchaseStatus.purchased || result == PurchaseStatus.restored) {
+  if (result == PurchaseStatus.success || result == PurchaseStatus.restored) {
     await _setPremiumUnlocked(true);
   }
 }

@@ -4,45 +4,8 @@ import 'dart:ui' as ui;
 import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
-import 'package:in_app_purchase/in_app_purchase.dart';
 
-const _freeTemplateLimit = 20;
-const _premiumProductId = 'premium_unlock';
-
-bool get _isPremium => _premiumUnlocked;
-bool _premiumUnlocked = false;
-
-Future<void> _initPremiumState() async {
-  final prefs = await SharedPreferences.getInstance();
-  _premiumUnlocked = prefs.getBool('premium_unlocked') ?? false;
-}
-
-Future<void> _setPremiumUnlocked(bool value) async {
-  _premiumUnlocked = value;
-  final prefs = await SharedPreferences.getInstance();
-  await prefs.setBool('premium_unlocked', value);
-}
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  AppDebugLog.add('main started');
-  try {
-    AppDebugLog.add('init premium start');
-    await _initPremiumState();
-    AppDebugLog.add('init premium done');
-    AppDebugLog.add('init MobileAds start');
-    await MobileAds.instance.initialize();
-    AppDebugLog.add('init MobileAds done');
-    AppDebugLog.add('init IAP start');
-    await InAppPurchase.instance.restorePurchases();
-    AppDebugLog.add('init IAP done');
-  } catch (e) {
-    final msg = 'Init error: $e';
-    AppDebugLog.add(msg);
-    debugPrint(msg);
-  }
-  AppDebugLog.add('runApp start');
+void main() {
   runApp(const ColoringWorld());
 }
 
@@ -78,33 +41,6 @@ class _MainMenuState extends State<MainMenu> {
     Category('Fantasy', Icons.auto_fix_high, Colors.purple),
   ];
 
-  BannerAd? _bannerAd;
-  bool _bannerReady = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadBanner();
-  }
-
-  void _loadBanner() {
-    _bannerAd = BannerAd(
-      adUnitId: const String.fromEnvironment('ADMOB_BANNER_ID', defaultValue: 'ca-app-pub-3940256099942544/6300978111'),
-      size: AdSize.fullBanner,
-      request: const AdRequest(),
-      listener: BannerAdListener(
-        onAdLoaded: (_) => setState(() => _bannerReady = true),
-        onAdFailedToLoad: (_, __) => _bannerReady = false,
-      ),
-    )..load();
-  }
-
-  @override
-  void dispose() {
-    _bannerAd?.dispose();
-    super.dispose();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -121,6 +57,19 @@ class _MainMenuState extends State<MainMenu> {
       ),
       body: Column(
         children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Text('Welcome, Little Artist! 🌟',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold, color: Colors.purple)),
+                const SizedBox(height: 8),
+                const Text('Choose a category and start coloring!',
+                    style: TextStyle(fontSize: 16, color: Colors.grey)),
+              ],
+            ),
+          ),
           Expanded(
             child: GridView.builder(
               padding: const EdgeInsets.all(16),
@@ -138,18 +87,11 @@ class _MainMenuState extends State<MainMenu> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16)),
                   child: InkWell(
-                    onTap: () async {
-                      if (!_isPremium) {
-                        await _showInterstitial();
-                      }
-                      if (mounted) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => TemplateScreen(category: cat)),
-                        );
-                      }
-                    },
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TemplateScreen(category: cat)),
+                    ),
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -176,18 +118,9 @@ class _MainMenuState extends State<MainMenu> {
               },
             ),
           ),
-          if (_bannerReady && _bannerAd != null)
-            SizedBox(
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            ),
         ],
       ),
     );
-  }
-
-  Future<void> _showInterstitial() async {
-    // Placeholder wiring: actual load/show depends on your AdMob unit ID
   }
 }
 
@@ -205,21 +138,10 @@ class TemplateScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final templates = _getTemplates(category.name);
-    final visibleTemplates = _isPremium
-        ? templates
-        : templates.take(_freeTemplateLimit).toList();
-    final premiumStart = _freeTemplateLimit;
     return Scaffold(
       appBar: AppBar(
         title: Text('${category.name} Templates'),
         backgroundColor: category.color,
-        actions: [
-          if (!_isPremium)
-            IconButton(
-              icon: const Text('👑', style: TextStyle(fontSize: 20)),
-              onPressed: () => _showPremiumDialog(context),
-            )
-        ],
       ),
       body: GridView.builder(
         padding: const EdgeInsets.all(12),
@@ -229,12 +151,9 @@ class TemplateScreen extends StatelessWidget {
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
-        itemCount: visibleTemplates.length + (_isPremium ? 0 : (templates.length > premiumStart ? 1 : 0)),
+        itemCount: templates.length,
         itemBuilder: (context, index) {
-          if (!_isPremium && index == visibleTemplates.length) {
-            return _PremiumUpgradeCard(onTap: () => _showPremiumDialog(context));
-          }
-          final tpl = visibleTemplates[index];
+          final tpl = templates[index];
           return Card(
             elevation: 3,
             shape: RoundedRectangleBorder(
@@ -882,8 +801,6 @@ class _ColoringScreenState extends State<ColoringScreen> {
     } catch (e) {
       debugPrint('Sound error: $e');
     }
-    if (!mounted) return;
-    await _showRewardedOnFinish(context);
     if (!mounted) return;
     showDialog(
       context: context,
@@ -1662,117 +1579,3 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     canvas.drawCircle(Offset(w * 0.62, h * 0.28), w * 0.05, paint);
     canvas.drawLine(Offset(w * 0.45, h * 0.55), Offset(w * 0.55, h * 0.55), paint);
   }
-
-class _PremiumUpgradeCard extends StatelessWidget {
-  final VoidCallback onTap;
-  const _PremiumUpgradeCard({required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      color: Colors.purple.shade50,
-      child: InkWell(
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: const [
-              Text('👑', style: TextStyle(fontSize: 40)),
-              SizedBox(height: 8),
-              Text('Unlock Premium',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              SizedBox(height: 4),
-              Text('300+ templates', style: TextStyle(fontSize: 12)),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-void _showPremiumDialog(BuildContext context) {
-  showDialog(
-    context: context,
-    builder: (_) => AlertDialog(
-      title: const Text('👑 Premium'),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: const [
-          Text('Unlock all 300+ templates and remove ads.'),
-          SizedBox(height: 12),
-          Text('One-time purchase'),
-        ],
-      ),
-      actions: [
-        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Later')),
-        ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context);
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('IAP placeholder — connect your product first')),
-            );
-          },
-          child: const Text('Upgrade'),
-        ),
-      ],
-    ),
-  );
-}
-
-Future<void> _showRewardedOnFinish(BuildContext context) async {
-  if (_isPremium) return;
-  final product = await _findPremiumProduct();
-  if (product != null && context.mounted) {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('🎉 Great Job!'),
-        content: const Text('Watch a short video to unlock more templates?'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('No')),
-          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Watch')),
-        ],
-      ),
-    );
-    if (ok == true && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Rewarded ad placeholder — connect AdMob unit first')),
-      );
-    }
-  }
-}
-
-Future<ProductDetails?> _findPremiumProduct() async {
-  try {
-    final products = await InAppPurchase.instance.queryProductDetails({_premiumProductId});
-    return products.productDetails.firstOrNull;
-  } catch (_) {
-    return null;
-  }
-}
-
-Future<void> _purchasePremium(ProductDetails product) async {
-  final purchaseParam = PurchaseParam(productDetails: product);
-  final result = await InAppPurchase.instance.buyNonConsumable(purchaseParam: purchaseParam);
-  if (result == PurchaseStatus.purchased || result == PurchaseStatus.restored) {
-    await _setPremiumUnlocked(true);
-  }
-
-class AppDebugLog {
-  static const _max = 200;
-  static final List<String> _logs = [];
-
-  static void add(String msg) {
-    final ts = DateTime.now().toIso8601String().substring(11, 23);
-    _logs.insert(0, '$ts $msg');
-    if (_logs.length > _max) _logs.removeLast();
-  }
-
-  static List<String> get logs => List.unmodifiable(_logs);
-}
-
-}

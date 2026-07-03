@@ -735,6 +735,7 @@ class _ColoringScreenState extends State<ColoringScreen> {
   int score = 0;
   int stars = 0;
   final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _sparkleVisible = false;
 
   @override
   void initState() {
@@ -760,10 +761,10 @@ class _ColoringScreenState extends State<ColoringScreen> {
     };
     setState(() {
       selectedColor = color;
-      _showSparkle = true;
+      _sparkleVisible = true;
     });
     Future.delayed(const Duration(milliseconds: 400), () {
-      if (mounted) setState(() => _showSparkle = false);
+      if (mounted) setState(() => _sparkleVisible = false);
     });
     try {
       await _playSound('pop.wav');
@@ -927,7 +928,7 @@ class _ColoringScreenState extends State<ColoringScreen> {
                     ),
                   ],
                 ),
-                if (_showSparkle)
+                if (_sparkleVisible)
                   const Positioned.fill(
                     child: IgnorePointer(
                       child: SparkleOverlay(),

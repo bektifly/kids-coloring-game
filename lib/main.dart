@@ -895,7 +895,7 @@ class DrawingPainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = width
       ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeCap.round;
+      ..strokeJoin = StrokeJoin.round;
     final path = Path()..moveTo(points.first.dx, points.first.dy);
     for (int i = 1; i < points.length; i++) {
       path.lineTo(points[i].dx, points[i].dy);

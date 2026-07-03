@@ -4,6 +4,25 @@ import 'dart:ui' as ui;
 import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:in_app_purchase/in_app_purchase.dart';
+
+const _freeTemplateLimit = 20;
+const _premiumProductId = 'premium_unlock';
+
+bool get _isPremium => _premiumUnlocked;
+bool _premiumUnlocked = false;
+
+Future<void> _initPremiumState() async {
+  final prefs = await SharedPreferences.getInstance();
+  _premiumUnlocked = prefs.getBool('premium_unlocked') ?? false;
+}
+
+Future<void> _setPremiumUnlocked(bool value) async {
+  _premiumUnlocked = value;
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setBool('premium_unlocked', value);
+}
 
 void main() {
   runApp(const ColoringWorld());
@@ -138,10 +157,21 @@ class TemplateScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final templates = _getTemplates(category.name);
+    final visibleTemplates = _isPremium
+        ? templates
+        : templates.take(_freeTemplateLimit).toList();
+    final premiumStart = _freeTemplateLimit;
     return Scaffold(
       appBar: AppBar(
         title: Text('${category.name} Templates'),
         backgroundColor: category.color,
+        actions: [
+          if (!_isPremium)
+            IconButton(
+              icon: const Text('👑', style: TextStyle(fontSize: 20)),
+              onPressed: _showPremiumDialog,
+            )
+        ],
       ),
       body: GridView.builder(
         padding: const EdgeInsets.all(12),
@@ -151,9 +181,12 @@ class TemplateScreen extends StatelessWidget {
           crossAxisSpacing: 12,
           mainAxisSpacing: 12,
         ),
-        itemCount: templates.length,
+        itemCount: visibleTemplates.length + (_isPremium ? 0 : (templates.length > premiumStart ? 1 : 0)),
         itemBuilder: (context, index) {
-          final tpl = templates[index];
+          if (!_isPremium && index == visibleTemplates.length) {
+            return _PremiumUpgradeCard(onTap: _showPremiumDialog);
+          }
+          final tpl = visibleTemplates[index];
           return Card(
             elevation: 3,
             shape: RoundedRectangleBorder(
@@ -1579,3 +1612,63 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     canvas.drawCircle(Offset(w * 0.62, h * 0.28), w * 0.05, paint);
     canvas.drawLine(Offset(w * 0.45, h * 0.55), Offset(w * 0.55, h * 0.55), paint);
   }
+
+class _PremiumUpgradeCard extends StatelessWidget {
+  final VoidCallback onTap;
+  const _PremiumUpgradeCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 4,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      color: Colors.purple.shade50,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Text('👑', style: TextStyle(fontSize: 40)),
+              SizedBox(height: 8),
+              Text('Unlock Premium',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              SizedBox(height: 4),
+              Text('300+ templates', style: TextStyle(fontSize: 12)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+void _showPremiumDialog(BuildContext context) {
+  showDialog(
+    context: context,
+    builder: (_) => AlertDialog(
+      title: const Text('👑 Premium'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: const [
+          Text('Unlock all 300+ templates and remove ads.'),
+          SizedBox(height: 12),
+          Text('One-time purchase'),
+        ],
+      ),
+      actions: [
+        TextButton(onPressed: () => Navigator.pop(context), child: const Text('Later')),
+        ElevatedButton(
+          onPressed: () {
+            Navigator.pop(context);
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('IAP placeholder — connect your product first')),
+            );
+          },
+          child: const Text('Upgrade'),
+        ),
+      ],
+    ),
+  );
+}

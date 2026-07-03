@@ -735,12 +735,12 @@ class _ColoringScreenState extends State<ColoringScreen> {
   int score = 0;
   int stars = 0;
   final AudioPlayer _audioPlayer = AudioPlayer();
-  bool _showSparkle = false;
 
   @override
   void initState() {
     super.initState();
     startTime = DateTime.now();
+    _audioPlayer.setReleaseMode(ReleaseMode.stop);
   }
 
   Future<void> _playSound(String path) async {
@@ -758,9 +758,6 @@ class _ColoringScreenState extends State<ColoringScreen> {
       Colors.pink: 'pink', Colors.brown: 'brown', Colors.black: 'black',
       Colors.white: 'white', Colors.grey: 'grey', Colors.teal: 'teal',
     };
-    await _playSound('pop.mp3');
-    final name = names[color];
-    if (name != null) await _playSound('color_$name.mp3');
     setState(() {
       selectedColor = color;
       _showSparkle = true;
@@ -768,6 +765,13 @@ class _ColoringScreenState extends State<ColoringScreen> {
     Future.delayed(const Duration(milliseconds: 400), () {
       if (mounted) setState(() => _showSparkle = false);
     });
+    try {
+      await _playSound('pop.wav');
+      final name = names[color];
+      if (name != null) await _playSound('color_$name.wav');
+    } catch (e) {
+      debugPrint('Sound error: $e');
+    }
   }
 
   Future<void> _finishColoring() async {
@@ -782,16 +786,20 @@ class _ColoringScreenState extends State<ColoringScreen> {
     existing.add('$score|${DateTime.now().toIso8601String()}');
     await prefs.setStringList(key, existing);
     stars = score >= 80 ? 3 : score >= 50 ? 2 : 1;
-    await _playSound('great_job.mp3');
-    Future.delayed(const Duration(milliseconds: 600), () async {
-      await _playSound('excellent.mp3');
-    });
-    Future.delayed(const Duration(milliseconds: 1200), () async {
-      await _playSound('amazing.mp3');
-    });
-    Future.delayed(const Duration(milliseconds: 1800), () async {
-      await _playSound('congratulations.mp3');
-    });
+    try {
+      await _playSound('great_job.wav');
+      Future.delayed(const Duration(milliseconds: 600), () async {
+        await _playSound('excellent.wav');
+      });
+      Future.delayed(const Duration(milliseconds: 1200), () async {
+        await _playSound('amazing.wav');
+      });
+      Future.delayed(const Duration(milliseconds: 1800), () async {
+        await _playSound('congratulations.wav');
+      });
+    } catch (e) {
+      debugPrint('Sound error: $e');
+    }
     if (!mounted) return;
     showDialog(
       context: context,

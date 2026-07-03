@@ -1,224 +1,754 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'dart:ui' as ui;
 import 'dart:math';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
-  runApp(const KidsColorGame());
+  runApp(const ColoringWorld());
 }
 
-class KidsColorGame extends StatefulWidget {
-  const KidsColorGame({super.key});
-
-  @override
-  State<KidsColorGame> createState() => _KidsColorGameState();
-}
-
-class _KidsColorGameState extends State<KidsColorGame> {
-  Color selectedColor = Colors.red;
-  final Map<String, Color> fillColors = {
-    'sky': Colors.lightBlue.shade100,
-    'grass': Colors.lightGreen.shade200,
-    'sun': Colors.amber.shade200,
-    'flower1': Colors.pink.shade200,
-    'flower2': Colors.purple.shade200,
-  };
-
-  final List<Color> colors = [
-    Colors.red, Colors.blue, Colors.green, Colors.yellow,
-    Colors.orange, Colors.purple, Colors.pink, Colors.black, Colors.white,
-  ];
+class ColoringWorld extends StatelessWidget {
+  const ColoringWorld({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Kids Coloring Game',
+      title: 'Coloring World',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.purple),
         useMaterial3: true,
       ),
-      home: Scaffold(
-        body: Column(
-          children: [
-            // Color Palette
-            Container(
-              height: 80,
-              color: Colors.white,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: colors.map((color) {
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() => selectedColor = color);
-                    },
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 200),
-                      width: 40,
-                      height: 40,
+      home: const MainMenu(),
+    );
+  }
+}
+
+class MainMenu extends StatefulWidget {
+  const MainMenu({super.key});
+
+  @override
+  State<MainMenu> createState() => _MainMenuState();
+}
+
+class _MainMenuState extends State<MainMenu> {
+  final List<Category> categories = [
+    Category('Animals', Icons.pets, Colors.orange),
+    Category('Nature', Icons.landscape, Colors.green),
+    Category('Vehicles', Icons.directions_car, Colors.blue),
+    Category('Fantasy', Icons.auto_fix_high, Colors.purple),
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('🎨 Coloring World', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.leaderboard),
+            onPressed: () => Navigator.push(
+              context, MaterialPageRoute(builder: (_) => const LeaderboardScreen()));
+          )
+        ],
+      ),
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              children: [
+                Text('Welcome, Little Artist! 🌟',
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        fontWeight: FontWeight.bold, color: Colors.purple)),
+                const SizedBox(height: 8),
+                const Text('Choose a category and start coloring!',
+                    style: TextStyle(fontSize: 16, color: Colors.grey)),
+              ],
+            ),
+          ),
+          Expanded(
+            child: GridView.builder(
+              padding: const EdgeInsets.all(16),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                childAspectRatio: 1.2,
+                crossAxisSpacing: 16,
+                mainAxisSpacing: 16,
+              ),
+              itemCount: categories.length,
+              itemBuilder: (context, index) {
+                final cat = categories[index];
+                return Card(
+                  elevation: 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                  child: InkWell(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => TemplateScreen(category: cat)),
+                    ),
+                    child: Container(
                       decoration: BoxDecoration(
-                        color: color,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: selectedColor == color
-                              ? Colors.black
-                              : Colors.grey.shade300,
-                          width: selectedColor == color ? 3 : 1,
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [cat.color, cat.color.withOpacity(0.7)],
                         ),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(cat.icon, size: 60, color: Colors.white),
+                          const SizedBox(height: 12),
+                          Text(cat.name,
+                              style: const TextStyle(
+                                  fontSize: 20, fontWeight: FontWeight.bold,
+                                  color: Colors.white)),
+                        ],
                       ),
                     ),
-                  );
-                }).toList(),
-              ),
+                  ),
+                );
+              },
             ),
-            // Game Canvas
-            Expanded(
-              child: ColoringCanvas(
-                selectedColor: selectedColor,
-                fillColors: fillColors,
-                onColorTap: (region, color) {
-                  setState(() => fillColors[region] = color);
-                },
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class ColoringCanvas extends StatelessWidget {
-  final Color selectedColor;
-  final Map<String, Color> fillColors;
-  final Function(String, Color) onColorTap;
+class Category {
+  final String name;
+  final IconData icon;
+  final Color color;
+  Category(this.name, this.icon, this.color);
+}
 
-  const ColoringCanvas({
-    super.key,
-    required this.selectedColor,
-    required this.fillColors,
-    required this.onColorTap,
-  });
+class TemplateScreen extends StatelessWidget {
+  final Category category;
+  const TemplateScreen({super.key, required this.category});
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final width = constraints.maxWidth;
-        final height = constraints.maxHeight;
-        return GestureDetector(
-          onTapUp: (details) {
-            final local = details.localPosition;
-            // Check which region was tapped
-            if (local.dy < height * 0.4) {
-              onColorTap('sky', selectedColor);
-            } else if (local.dy < height * 0.5) {
-              onColorTap('sun', selectedColor);
-            } else if (local.dx < width * 0.2 && local.dy > height * 0.6) {
-              onColorTap('flower1', selectedColor);
-            } else if (local.dx > width * 0.4 && local.dy > height * 0.6) {
-              onColorTap('flower2', selectedColor);
-            } else {
-              onColorTap('grass', selectedColor);
-            }
-          },
-          child: CustomPaint(
-            size: Size(width, height),
-            painter: ColoringPainter(fillColors),
-          ),
-        );
-      },
+    final templates = _getTemplates(category.name);
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('${category.name} Templates'),
+        backgroundColor: category.color,
+      ),
+      body: GridView.builder(
+        padding: const EdgeInsets.all(12),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          childAspectRatio: 0.8,
+          crossAxisSpacing: 12,
+          mainAxisSpacing: 12,
+        ),
+        itemCount: templates.length,
+        itemBuilder: (context, index) {
+          final tpl = templates[index];
+          return Card(
+            elevation: 3,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12)),
+            child: InkWell(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => ColoringScreen(
+                    template: tpl,
+                    categoryName: category.name,
+                  )),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(12),
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: CustomPaint(
+                        size: const Size(double.infinity, double.infinity),
+                        painter: TemplatePreviewPainter(tpl),
+                      ),
+                    ),
+                    Text(tpl.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold),
+                        textAlign: TextAlign.center),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  List<Template> _getTemplates(String category) {
+    switch (category) {
+      case 'Animals':
+        return [
+          Template('Cat', _drawCat),
+          Template('Dog', _drawDog),
+          Template('Fish', _drawFish),
+          Template('Bird', _drawBird),
+          Template('Rabbit', _drawRabbit),
+          Template('Butterfly', _drawButterfly),
+        ];
+      case 'Nature':
+        return [
+          Template('Tree', _drawTree),
+          Template('Flower', _drawFlower),
+          Template('Mountain', _drawMountain),
+          Template('Sunset', _drawSunset),
+          Template('House', _drawHouse),
+          Template('Boat', _drawBoat),
+        ];
+      case 'Vehicles':
+        return [
+          Template('Car', _drawCar),
+          Template('Bus', _drawBus),
+          Template('Rocket', _drawRocket),
+          Template('Train', _drawTrain),
+          Template('Bike', _drawBike),
+          Template('Plane', _drawPlane),
+        ];
+      case 'Fantasy':
+        return [
+          Template('Castle', _drawCastle),
+          Template('Dragon', _drawDragon),
+          Template('Unicorn', _drawUnicorn),
+          Template('Star', _drawStar),
+          Template('Crown', _drawCrown),
+          Template('Treasure', _drawTreasure),
+        ];
+      default:
+        return [Template('Blank', _drawBlank)];
+    }
+  }
+
+  void _drawCat(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.35), w * 0.18, paint);
+    final path = Path();
+    path.moveTo(w * 0.32, h * 0.2); path.lineTo(w * 0.38, h * 0.08); path.lineTo(w * 0.45, h * 0.22);
+    path.moveTo(w * 0.68, h * 0.2); path.lineTo(w * 0.62, h * 0.08); path.lineTo(w * 0.55, h * 0.22);
+    canvas.drawPath(path, paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.3, h * 0.45, w * 0.4, h * 0.35), paint);
+    final tail = Path()..moveTo(w * 0.7, h * 0.6)..quadraticBezierTo(w * 0.9, h * 0.4, w * 0.85, h * 0.25);
+    canvas.drawPath(tail, paint);
+    canvas.drawCircle(Offset(w * 0.43, h * 0.32), w * 0.03, paint);
+    canvas.drawCircle(Offset(w * 0.57, h * 0.32), w * 0.03, paint);
+  }
+
+  void _drawDog(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.35), w * 0.2, paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.2, h * 0.25, w * 0.18, h * 0.25), paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.62, h * 0.25, w * 0.18, h * 0.25), paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.3, h * 0.5, w * 0.4, h * 0.3), paint);
+    canvas.drawCircle(Offset(w * 0.5, h * 0.38), w * 0.04, paint);
+  }
+
+  void _drawFish(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawOval(Rect.fromLTWH(w * 0.2, h * 0.25, w * 0.5, h * 0.5), paint);
+    final tail = Path()..moveTo(w * 0.7, h * 0.5)..lineTo(w * 0.95, h * 0.3)..lineTo(w * 0.95, h * 0.7)..close();
+    canvas.drawPath(tail, paint);
+    canvas.drawCircle(Offset(w * 0.35, h * 0.4), w * 0.04, paint);
+  }
+
+  void _drawBird(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.4), w * 0.15, paint);
+    final wing = Path()..moveTo(w * 0.4, h * 0.4)..quadraticBezierTo(w * 0.7, h * 0.2, w * 0.9, h * 0.4);
+    canvas.drawPath(wing, paint);
+    final beak = Path()..moveTo(w * 0.6, h * 0.4)..lineTo(w * 0.75, h * 0.38)..lineTo(w * 0.6, h * 0.36)..close();
+    canvas.drawPath(beak, paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.55), Offset(w * 0.5, h * 0.8), paint);
+  }
+
+  void _drawRabbit(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.4), w * 0.2, paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.35, h * 0.05, w * 0.1, h * 0.3), paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.55, h * 0.05, w * 0.1, h * 0.3), paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.3, h * 0.55, w * 0.4, h * 0.3), paint);
+  }
+
+  void _drawButterfly(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.4), w * 0.08, paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.48), Offset(w * 0.5, h * 0.75), paint);
+    final left = Path()..moveTo(w * 0.5, h * 0.4)..quadraticBezierTo(w * 0.15, h * 0.2, w * 0.2, h * 0.5)..quadraticBezierTo(w * 0.4, h * 0.5, w * 0.5, h * 0.4);
+    final right = Path()..moveTo(w * 0.5, h * 0.4)..quadraticBezierTo(w * 0.85, h * 0.2, w * 0.8, h * 0.5)..quadraticBezierTo(w * 0.6, h * 0.5, w * 0.5, h * 0.4);
+    canvas.drawPath(left, paint); canvas.drawPath(right, paint);
+  }
+
+  void _drawTree(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawLine(Offset(w * 0.5, h * 0.8), Offset(w * 0.5, h * 0.45), paint);
+    canvas.drawCircle(Offset(w * 0.5, h * 0.3), w * 0.25, paint);
+    canvas.drawCircle(Offset(w * 0.5, h * 0.3), w * 0.15, paint);
+  }
+
+  void _drawFlower(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    final cx = w * 0.5, cy = h * 0.4;
+    for (int i = 0; i < 5; i++) {
+      final angle = (i * 72) * pi / 180;
+      final px = cx + cos(angle) * w * 0.18;
+      final py = cy + sin(angle) * w * 0.18;
+      canvas.drawCircle(Offset(px, py), w * 0.1, paint);
+    }
+    canvas.drawCircle(Offset(cx, cy), w * 0.08, paint);
+    canvas.drawLine(Offset(cx, cy + w * 0.1), Offset(cx, h * 0.85), paint);
+  }
+
+  void _drawMountain(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    final path = Path()..moveTo(w * 0.1, h * 0.8)..lineTo(w * 0.5, h * 0.2)..lineTo(w * 0.9, h * 0.8)..close();
+    canvas.drawPath(path, paint);
+    canvas.drawLine(Offset(0, h * 0.8), Offset(w, h * 0.8), paint);
+  }
+
+  void _drawSunset(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.4), w * 0.18, paint);
+    final path = Path()..moveTo(0, h * 0.7)..quadraticBezierTo(w * 0.3, h * 0.55, w * 0.5, h * 0.7)..quadraticBezierTo(w * 0.7, h * 0.55, w, h * 0.7)..lineTo(w, h)..lineTo(0, h)..close();
+    canvas.drawPath(path, paint);
+  }
+
+  void _drawHouse(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawRect(Rect.fromLTWH(w * 0.25, h * 0.4, w * 0.5, h * 0.4), paint);
+    final roof = Path()..moveTo(w * 0.2, h * 0.4)..lineTo(w * 0.5, h * 0.15)..lineTo(w * 0.8, h * 0.4)..close();
+    canvas.drawPath(roof, paint);
+    canvas.drawRect(Rect.fromLTWH(w * 0.4, h * 0.55, w * 0.15, h * 0.25), paint);
+  }
+
+  void _drawBoat(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    final hull = Path()..moveTo(w * 0.2, h * 0.6)..lineTo(w * 0.8, h * 0.6)..lineTo(w * 0.75, h * 0.8)..lineTo(w * 0.25, h * 0.8)..close();
+    canvas.drawPath(hull, paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.6), Offset(w * 0.5, h * 0.25), paint);
+    final sail = Path()..moveTo(w * 0.5, h * 0.25)..lineTo(w * 0.75, h * 0.5)..lineTo(w * 0.5, h * 0.5)..close();
+    canvas.drawPath(sail, paint);
+  }
+
+  void _drawCar(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawRect(Rect.fromLTWH(w * 0.15, h * 0.45, w * 0.7, h * 0.25), paint);
+    canvas.drawRect(Rect.fromLTWH(w * 0.3, h * 0.25, w * 0.4, h * 0.25), paint);
+    canvas.drawCircle(Offset(w * 0.3, h * 0.72), w * 0.08, paint);
+    canvas.drawCircle(Offset(w * 0.7, h * 0.72), w * 0.08, paint);
+  }
+
+  void _drawBus(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawRect(Rect.fromLTWH(w * 0.1, h * 0.3, w * 0.8, h * 0.4), paint);
+    canvas.drawCircle(Offset(w * 0.25, h * 0.72), w * 0.07, paint);
+    canvas.drawCircle(Offset(w * 0.5, h * 0.72), w * 0.07, paint);
+    canvas.drawCircle(Offset(w * 0.75, h * 0.72), w * 0.07, paint);
+  }
+
+  void _drawRocket(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    final body = Path()..moveTo(w * 0.5, h * 0.1)..quadraticBezierTo(w * 0.7, h * 0.4, w * 0.6, h * 0.7)..lineTo(w * 0.4, h * 0.7)..quadraticBezierTo(w * 0.3, h * 0.4, w * 0.5, h * 0.1);
+    canvas.drawPath(body, paint);
+    canvas.drawCircle(Offset(w * 0.5, h * 0.35), w * 0.08, paint);
+  }
+
+  void _drawTrain(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawRect(Rect.fromLTWH(w * 0.15, h * 0.4, w * 0.5, h * 0.3), paint);
+    canvas.drawRect(Rect.fromLTWH(w * 0.6, h * 0.5, w * 0.25, h * 0.2), paint);
+    canvas.drawCircle(Offset(w * 0.3, h * 0.72), w * 0.07, paint);
+    canvas.drawCircle(Offset(w * 0.7, h * 0.72), w * 0.07, paint);
+  }
+
+  void _drawBike(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.3, h * 0.65), w * 0.15, paint);
+    canvas.drawCircle(Offset(w * 0.7, h * 0.65), w * 0.15, paint);
+    canvas.drawLine(Offset(w * 0.3, h * 0.65), Offset(w * 0.7, h * 0.65), paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.5), Offset(w * 0.5, h * 0.65), paint);
+  }
+
+  void _drawPlane(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawOval(Rect.fromLTWH(w * 0.2, h * 0.4, w * 0.6, h * 0.2), paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.4), Offset(w * 0.5, h * 0.15), paint);
+    canvas.drawLine(Offset(w * 0.3, h * 0.5), Offset(w * 0.3, h * 0.7), paint);
+    canvas.drawLine(Offset(w * 0.7, h * 0.5), Offset(w * 0.7, h * 0.7), paint);
+  }
+
+  void _drawCastle(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawRect(Rect.fromLTWH(w * 0.25, h * 0.35, w * 0.5, h * 0.45), paint);
+    canvas.drawRect(Rect.fromLTWH(w * 0.3, h * 0.2, w * 0.1, h * 0.15), paint);
+    canvas.drawRect(Rect.fromLTWH(w * 0.6, h * 0.2, w * 0.1, h * 0.15), paint);
+  }
+
+  void _drawDragon(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.35), w * 0.18, paint);
+    final body = Path()..moveTo(w * 0.5, h * 0.5)..quadraticBezierTo(w * 0.8, h * 0.6, w * 0.9, h * 0.8)..quadraticBezierTo(w * 0.7, h * 0.7, w * 0.5, h * 0.6);
+    canvas.drawPath(body, paint);
+    canvas.drawCircle(Offset(w * 0.43, h * 0.32), w * 0.03, paint);
+    canvas.drawCircle(Offset(w * 0.57, h * 0.32), w * 0.03, paint);
+  }
+
+  void _drawUnicorn(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.4), w * 0.18, paint);
+    canvas.drawLine(Offset(w * 0.55, h * 0.22), Offset(w * 0.65, h * 0.05), paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.3, h * 0.55, w * 0.4, h * 0.3), paint);
+  }
+
+  void _drawStar(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    final path = Path();
+    for (int i = 0; i < 5; i++) {
+      final angle = (i * 144 - 90) * pi / 180;
+      final x = w * 0.5 + cos(angle) * w * 0.3;
+      final y = h * 0.5 + sin(angle) * w * 0.3;
+      i == 0 ? path.moveTo(x, y) : path.lineTo(x, y);
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  void _drawCrown(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    final path = Path()..moveTo(w * 0.2, h * 0.7)..lineTo(w * 0.2, h * 0.3)..lineTo(w * 0.35, h * 0.5)..lineTo(w * 0.5, h * 0.2)..lineTo(w * 0.65, h * 0.5)..lineTo(w * 0.8, h * 0.3)..lineTo(w * 0.8, h * 0.7)..close();
+    canvas.drawPath(path, paint);
+  }
+
+  void _drawTreasure(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawOval(Rect.fromLTWH(w * 0.25, h * 0.35, w * 0.5, h * 0.35), paint);
+    canvas.drawCircle(Offset(w * 0.5, h * 0.52), w * 0.12, paint);
+    canvas.drawLine(Offset(w * 0.15, h * 0.45), Offset(w * 0.0, h * 0.4), paint);
+    canvas.drawLine(Offset(w * 0.85, h * 0.45), Offset(w, h * 0.4), paint);
+  }
+
+  void _drawBlank(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.grey..style = PaintingStyle.stroke..strokeWidth = 2;
+    canvas.drawRect(Rect.fromLTWH(10, 10, size.width - 20, size.height - 20), paint);
+    final text = TextPainter(text: const TextSpan(text: 'Blank Canvas', style: TextStyle(fontSize: 20, color: Colors.grey)), textDirection: TextDirection.ltr);
+    text.layout();
+    text.paint(canvas, Offset((size.width - text.width) / 2, (size.height - text.height) / 2));
+  }
+}
+
+class TemplatePreviewPainter extends CustomPainter {
+  final Template template;
+  const TemplatePreviewPainter(this.template);
+  @override
+  void paint(Canvas canvas, Size size) => template.draw(canvas, size);
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class Template {
+  final String name;
+  final void Function(Canvas, Size) draw;
+  const Template(this.name, this.draw);
+}
+
+class ColoringScreen extends StatefulWidget {
+  final Template template;
+  final String categoryName;
+  const ColoringScreen({super.key, required this.template, required this.categoryName});
+
+  @override
+  State<ColoringScreen> createState() => _ColoringScreenState();
+}
+
+class _ColoringScreenState extends State<ColoringScreen> {
+  Color selectedColor = Colors.red;
+  final List<Color> colors = const [
+    Colors.red, Colors.blue, Colors.green, Colors.yellow,
+    Colors.orange, Colors.purple, Colors.pink, Colors.brown,
+    Colors.black, Colors.white, Colors.grey, Colors.teal,
+  ];
+
+  final List<Color> usedColors = [];
+  DateTime? startTime;
+  bool finished = false;
+  int score = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    startTime = DateTime.now();
+  }
+
+  Future<void> _finishColoring() async {
+    final endTime = DateTime.now();
+    final duration = endTime.difference(startTime!);
+    final timeScore = duration.inSeconds < 30 ? 30 : duration.inSeconds < 60 ? 20 : 10;
+    final colorScore = min(usedColors.length * 5, 40);
+    score = timeScore + colorScore + 30;
+    setState(() => finished = true);
+    final prefs = await SharedPreferences.getInstance();
+    final key = 'leaderboard_${widget.categoryName}_${widget.template.name}';
+    final existing = prefs.getStringList(key) ?? [];
+    existing.add('$score|${DateTime.now().toIso8601String()}');
+    await prefs.setStringList(key, existing);
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => ResultDialog(
+        score: score,
+        template: widget.template.name,
+        categoryName: widget.categoryName,
+        usedColors: usedColors,
+        duration: duration,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.template.name),
+        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        actions: [
+          if (!finished)
+            IconButton(
+              icon: const Icon(Icons.check_circle, color: Colors.green),
+              onPressed: _finishColoring,
+            )
+        ],
+      ),
+      body: finished
+          ? Center(child: Text('Score: $score', style: const TextStyle(fontSize: 32)))
+          : Column(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTapUp: (details) {
+                      final box = context.findRenderObject() as RenderBox?;
+                      if (box == null) return;
+                      setState(() {
+                        selectedColor = colors[((details.localPosition.dx / box.size.width * colors.length).floor()) % colors.length];
+                        if (!usedColors.contains(selectedColor)) usedColors.add(selectedColor);
+                      });
+                    },
+                    child: CustomPaint(
+                      painter: SketchPainter(widget.template, selectedColor),
+                      child: Container(),
+                    ),
+                  ),
+                ),
+                Container(
+                  height: 100,
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 8)],
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: colors.map((color) {
+                      return GestureDetector(
+                        onTap: () => setState(() => selectedColor = color),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: color,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: selectedColor == color ? Colors.black : Colors.grey.shade300,
+                              width: selectedColor == color ? 3 : 1,
+                            ),
+                          ),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
     );
   }
 }
 
-class ColoringPainter extends CustomPainter {
-  final Map<String, Color> fillColors;
-
-  ColoringPainter(this.fillColors);
-
+class SketchPainter extends CustomPainter {
+  final Template template;
+  final Color selectedColor;
+  const SketchPainter(this.template, this.selectedColor);
   @override
   void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
+    canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), Paint()..color = Colors.white);
+    final recorder = ui.PictureRecorder();
+    final tempCanvas = Canvas(recorder);
+    template.draw(tempCanvas, size);
+    final picture = recorder.endRecording();
+    picture.toCanvas(canvas);
+    canvas.drawCircle(Offset(20, size.height - 20), 16, Paint()..color = selectedColor);
+    canvas.drawCircle(Offset(20, size.height - 20), 16, Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 2);
+  }
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+}
 
-    // Sky
-    canvas.drawColor(
-      fillColors['sky'] ?? Colors.lightBlue.shade100,
-      BlendMode.src,
-    );
-    // Sky border
-    canvas.drawLine(
-      Offset(0, h * 0.4),
-      Offset(w, h * 0.4),
-      Paint()
-        ..color = Colors.black
-        ..strokeWidth = 3,
-    );
+class ResultDialog extends StatelessWidget {
+  final int score;
+  final String template;
+  final String categoryName;
+  final List<Color> usedColors;
+  final Duration duration;
+  const ResultDialog({
+    super.key,
+    required this.score,
+    required this.template,
+    required this.categoryName,
+    required this.usedColors,
+    required this.duration,
+  });
 
-    // Grass
-    canvas.drawRect(
-      Rect.fromLTWH(0, h * 0.4, w, h * 0.6),
-      Paint()
-        ..color = fillColors['grass'] ?? Colors.lightGreen.shade200,
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('🎨 Coloring Complete!'),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text('Template: $template', style: const TextStyle(fontSize: 18)),
+          const SizedBox(height: 12),
+          Text('Score: $score/100',
+              style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.purple)),
+          const SizedBox(height: 12),
+          Text('Time: ${duration.inMinutes}m ${duration.inSeconds % 60}s'),
+          Text('Colors used: ${usedColors.length}'),
+          const SizedBox(height: 12),
+          const Text('Assessment:', style: TextStyle(fontWeight: FontWeight.bold)),
+          Text(_getAssessment(), textAlign: TextAlign.center),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pushAndRemoveUntil(
+            context, MaterialPageRoute(builder: (_) => const LeaderboardScreen()),
+                (route) => false),
+          child: const Text('Leaderboard'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('OK'),
+        ),
+      ],
     );
-    // Grass border
-    canvas.drawLine(
-      Offset(0, h * 1.0),
-      Offset(w, h * 1.0),
-      Paint()
-        ..color = Colors.black
-        ..strokeWidth = 3,
-    );
+  }
 
-    // Sun
-    canvas.drawCircle(
-      Offset(w * 0.75, h * 0.2),
-      w * 0.1,
-      Paint()
-        ..color = fillColors['sun'] ?? Colors.amber.shade200,
-    );
-    canvas.drawCircle(
-      Offset(w * 0.75, h * 0.2),
-      w * 0.1,
-      Paint()
-        ..color = Colors.black
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 3,
-    );
+  String _getAssessment() {
+    if (score >= 90) return '🌟 Perfect! Your coloring looks like a real masterpiece!';
+    if (score >= 70) return '👏 Great job! Very nice coloring!';
+    if (score >= 50) return '👍 Good effort! Keep practicing!';
+    return '🌈 Nice try! Try using more colors next time!';
+  }
+}
 
-    // Flower 1
-    final fx1 = w * 0.1;
-    final fy1 = h * 0.7;
-    final fr = w * 0.04;
-    canvas.drawCircle(Offset(fx1, fy1), fr, Paint()..color = fillColors['flower1'] ?? Colors.pink.shade200);
-    canvas.drawCircle(Offset(fx1, fy1), fr, Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 2);
-    canvas.drawCircle(Offset(fx1 - fr, fy1), fr * 0.6, Paint()..color = fillColors['flower1'] ?? Colors.pink.shade200);
-    canvas.drawCircle(Offset(fx1 - fr, fy1), fr * 0.6, Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 2);
-    canvas.drawCircle(Offset(fx1 + fr, fy1), fr * 0.6, Paint()..color = fillColors['flower1'] ?? Colors.pink.shade200);
-    canvas.drawCircle(Offset(fx1 + fr, fy1), fr * 0.6, Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 2);
-    canvas.drawCircle(Offset(fx1, fy1 - fr), fr * 0.6, Paint()..color = fillColors['flower1'] ?? Colors.pink.shade200);
-    canvas.drawCircle(Offset(fx1, fy1 - fr), fr * 0.6, Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 2);
-    canvas.drawCircle(Offset(fx1, fy1 + fr), fr * 0.6, Paint()..color = fillColors['flower1'] ?? Colors.pink.shade200);
-    canvas.drawCircle(Offset(fx1, fy1 + fr), fr * 0.6, Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 2);
-    // Stem
-    canvas.drawLine(Offset(fx1, fy1 + fr), Offset(fx1, fy1 + fr * 3), Paint()..color = Colors.green..strokeWidth = 3);
+class LeaderboardScreen extends StatefulWidget {
+  const LeaderboardScreen({super.key});
 
-    // Flower 2
-    final fx2 = w * 0.45;
-    final fy2 = h * 0.75;
-    final fr2 = w * 0.05;
-    canvas.drawCircle(Offset(fx2, fy2), fr2, Paint()..color = fillColors['flower2'] ?? Colors.purple.shade200);
-    canvas.drawCircle(Offset(fx2, fy2), fr2, Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 2);
-    canvas.drawCircle(Offset(fx2 - fr2, fy2), fr2 * 0.6, Paint()..color = fillColors['flower2'] ?? Colors.purple.shade200);
-    canvas.drawCircle(Offset(fx2 - fr2, fy2), fr2 * 0.6, Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 2);
-    canvas.drawCircle(Offset(fx2 + fr2, fy2), fr2 * 0.6, Paint()..color = fillColors['flower2'] ?? Colors.purple.shade200);
-    canvas.drawCircle(Offset(fx2 + fr2, fy2), fr2 * 0.6, Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 2);
-    canvas.drawCircle(Offset(fx2, fy2 - fr2), fr2 * 0.6, Paint()..color = fillColors['flower2'] ?? Colors.purple.shade200);
-    canvas.drawCircle(Offset(fx2, fy2 - fr2), fr2 * 0.6, Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 2);
-    canvas.drawCircle(Offset(fx2, fy2 + fr2), fr2 * 0.6, Paint()..color = fillColors['flower2'] ?? Colors.purple.shade200);
-    canvas.drawCircle(Offset(fx2, fy2 + fr2), fr2 * 0.6, Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 2);
-    canvas.drawLine(Offset(fx2, fy2 + fr2), Offset(fx2, fy2 + fr2 * 3), Paint()..color = Colors.green..strokeWidth = 3);
+  @override
+  State<LeaderboardScreen> createState() => _LeaderboardScreenState();
+}
+
+class _LeaderboardScreenState extends State<LeaderboardScreen> {
+  Map<String, List<Map<String, dynamic>>> _leaderboard = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLeaderboard();
+  }
+
+  Future<void> _loadLeaderboard() async {
+    final prefs = await SharedPreferences.getInstance();
+    final data = <String, List<Map<String, dynamic>>>{};
+    for (final key in prefs.getKeys()) {
+      if (key.startsWith('leaderboard_')) {
+        final entries = prefs.getStringList(key) ?? [];
+        final parsed = entries.map((e) {
+          final parts = e.split('|');
+          return {'score': int.parse(parts[0]), 'date': parts[1]};
+        }).toList();
+        parsed.sort((a, b) => b['score'].compareTo(a['score']));
+        data[key.substring(12)] = parsed.take(10).toList();
+      }
+    }
+    setState(() => _leaderboard = data);
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('🏆 Leaderboard'),
+        backgroundColor: Colors.amber,
+      ),
+      body: _leaderboard.isEmpty
+          ? const Center(child: Text('No scores yet. Start coloring!'))
+          : ListView(
+              padding: const EdgeInsets.all(16),
+              children: _leaderboard.entries.map((entry) {
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ExpansionTile(
+                    title: Text(entry.key.replaceAll('_', ' '),
+                        style: const TextStyle(fontWeight: FontWeight.bold)),
+                    children: entry.value.map((scoreData) {
+                      return ListTile(
+                        leading: CircleAvatar(
+                          backgroundColor: Colors.amber,
+                          child: Text('${scoreData['score']}'),
+                        ),
+                        title: Text('Score: ${scoreData['score']}/100'),
+                        subtitle: Text(scoreData['date'].toString().split('T').first),
+                      );
+                    }).toList(),
+                  ),
+                );
+              }).toList(),
+            ),
+    );
+  }
 }

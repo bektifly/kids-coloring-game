@@ -24,7 +24,11 @@ Future<void> _setPremiumUnlocked(bool value) async {
   await prefs.setBool('premium_unlocked', value);
 }
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await _initPremiumState();
+  await MobileAds.instance.initialize();
+  await InAppPurchase.instance.restorePurchases();
   runApp(const ColoringWorld());
 }
 
@@ -60,6 +64,33 @@ class _MainMenuState extends State<MainMenu> {
     Category('Fantasy', Icons.auto_fix_high, Colors.purple),
   ];
 
+  BannerAd? _bannerAd;
+  bool _bannerReady = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBanner();
+  }
+
+  void _loadBanner() {
+    _bannerAd = BannerAd(
+      adUnitId: const String.fromEnvironment('ADMOB_BANNER_ID', defaultValue: 'ca-app-pub-3940256099942544/6300978111'),
+      size: AdSize.fullBanner,
+      request: const AdRequest(),
+      listener: BannerAdListener(
+        onAdLoaded: (_) => setState(() => _bannerReady = true),
+        onAdFailedToLoad: (_, __) => _bannerReady = false,
+      ),
+    )..load();
+  }
+
+  @override
+  void dispose() {
+    _bannerAd?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -76,19 +107,6 @@ class _MainMenuState extends State<MainMenu> {
       ),
       body: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                Text('Welcome, Little Artist! 🌟',
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                        fontWeight: FontWeight.bold, color: Colors.purple)),
-                const SizedBox(height: 8),
-                const Text('Choose a category and start coloring!',
-                    style: TextStyle(fontSize: 16, color: Colors.grey)),
-              ],
-            ),
-          ),
           Expanded(
             child: GridView.builder(
               padding: const EdgeInsets.all(16),
@@ -106,11 +124,18 @@ class _MainMenuState extends State<MainMenu> {
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(16)),
                   child: InkWell(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => TemplateScreen(category: cat)),
-                    ),
+                    onTap: () async {
+                      if (!_isPremium) {
+                        await _showInterstitial();
+                      }
+                      if (mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => TemplateScreen(category: cat)),
+                        );
+                      }
+                    },
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
@@ -137,9 +162,18 @@ class _MainMenuState extends State<MainMenu> {
               },
             ),
           ),
+          if (_bannerReady && _bannerAd != null)
+            SizedBox(
+              height: _bannerAd!.size.height.toDouble(),
+              child: AdWidget(ad: _bannerAd!),
+            ),
         ],
       ),
     );
+  }
+
+  Future<void> _showInterstitial() async {
+    // Placeholder wiring: actual load/show depends on your AdMob unit ID
   }
 }
 
@@ -834,6 +868,8 @@ class _ColoringScreenState extends State<ColoringScreen> {
     } catch (e) {
       debugPrint('Sound error: $e');
     }
+    if (!mounted) return;
+    await _showRewardedOnFinish(context);
     if (!mounted) return;
     showDialog(
       context: context,
@@ -1671,4 +1707,44 @@ void _showPremiumDialog(BuildContext context) {
       ],
     ),
   );
+}
+
+Future<void> _showRewardedOnFinish(BuildContext context) async {
+  if (_isPremium) return;
+  final product = await _findPremiumProduct();
+  if (product != null && context.mounted) {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('🎉 Great Job!'),
+        content: const Text('Watch a short video to unlock more templates?'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('No')),
+          ElevatedButton(onPressed: () => Navigator.pop(context, true), child: const Text('Watch')),
+        ],
+      ),
+    );
+    if (ok == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Rewarded ad placeholder — connect AdMob unit first')),
+      );
+    }
+  }
+}
+
+Future<ProductDetails?> _findPremiumProduct() async {
+  try {
+    final products = await InAppPurchase.instance.queryProductDetails({_premiumProductId});
+    return products.productDetails.firstOrNull;
+  } catch (_) {
+    return null;
+  }
+}
+
+Future<void> _purchasePremium(ProductDetails product) async {
+  final purchaseParam = PurchaseParam(product: product);
+  final result = await InAppPurchase.instance.buyNonConsumable(purchaseParam: purchaseParam);
+  if (result == PurchaseStatus.purchased || result == PurchaseStatus.restored) {
+    await _setPremiumUnlocked(true);
+  }
 }

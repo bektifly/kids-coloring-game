@@ -169,7 +169,7 @@ class TemplateScreen extends StatelessWidget {
           if (!_isPremium)
             IconButton(
               icon: const Text('👑', style: TextStyle(fontSize: 20)),
-              onPressed: _showPremiumDialog,
+              onPressed: () => _showPremiumDialog(context),
             )
         ],
       ),
@@ -184,7 +184,7 @@ class TemplateScreen extends StatelessWidget {
         itemCount: visibleTemplates.length + (_isPremium ? 0 : (templates.length > premiumStart ? 1 : 0)),
         itemBuilder: (context, index) {
           if (!_isPremium && index == visibleTemplates.length) {
-            return _PremiumUpgradeCard(onTap: _showPremiumDialog);
+            return _PremiumUpgradeCard(onTap: () => _showPremiumDialog(context));
           }
           final tpl = visibleTemplates[index];
           return Card(

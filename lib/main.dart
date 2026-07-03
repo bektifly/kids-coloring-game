@@ -193,39 +193,31 @@ class TemplateScreen extends StatelessWidget {
     switch (category) {
       case 'Animals':
         return [
-          Template('Cat', _drawCat),
-          Template('Dog', _drawDog),
-          Template('Fish', _drawFish),
-          Template('Bird', _drawBird),
-          Template('Rabbit', _drawRabbit),
-          Template('Butterfly', _drawButterfly),
+          Template('Cat', _drawCat), Template('Dog', _drawDog), Template('Fish', _drawFish),
+          Template('Bird', _drawBird), Template('Rabbit', _drawRabbit), Template('Butterfly', _drawButterfly),
+          Template('Elephant', _drawElephant), Template('Giraffe', _drawGiraffe), Template('Panda', _drawPanda),
+          Template('Tiger', _drawTiger), Template('Lion', _drawLion), Template('Fox', _drawFox),
         ];
       case 'Nature':
         return [
-          Template('Tree', _drawTree),
-          Template('Flower', _drawFlower),
-          Template('Mountain', _drawMountain),
-          Template('Sunset', _drawSunset),
-          Template('House', _drawHouse),
-          Template('Boat', _drawBoat),
+          Template('Tree', _drawTree), Template('Flower', _drawFlower), Template('Mountain', _drawMountain),
+          Template('Sunset', _drawSunset), Template('House', _drawHouse), Template('Boat', _drawBoat),
+          Template('Rainbow', _drawRainbow), Template('River', _drawRiver), Template('Volcano', _drawVolcano),
+          Template('Cloud', _drawCloud), Template('Leaf', _drawLeaf), Template('Cactus', _drawCactus),
         ];
       case 'Vehicles':
         return [
-          Template('Car', _drawCar),
-          Template('Bus', _drawBus),
-          Template('Rocket', _drawRocket),
-          Template('Train', _drawTrain),
-          Template('Bike', _drawBike),
-          Template('Plane', _drawPlane),
+          Template('Car', _drawCar), Template('Bus', _drawBus), Template('Rocket', _drawRocket),
+          Template('Train', _drawTrain), Template('Bike', _drawBike), Template('Plane', _drawPlane),
+          Template('Helicopter', _drawHelicopter), Template('Ship', _drawShip), Template('Tractor', _drawTractor),
+          Template('Motorcycle', _drawMotorcycle), Template('Submarine', _drawSubmarine), Template('HotAirBalloon', _drawHotAirBalloon),
         ];
       case 'Fantasy':
         return [
-          Template('Castle', _drawCastle),
-          Template('Dragon', _drawDragon),
-          Template('Unicorn', _drawUnicorn),
-          Template('Star', _drawStar),
-          Template('Crown', _drawCrown),
-          Template('Treasure', _drawTreasure),
+          Template('Castle', _drawCastle), Template('Dragon', _drawDragon), Template('Unicorn', _drawUnicorn),
+          Template('Star', _drawStar), Template('Crown', _drawCrown), Template('Treasure', _drawTreasure),
+          Template('Wand', _drawWand), Template('Fairy', _drawFairy), Template('Mermaid', _drawMermaid),
+          Template('Wizard', _drawWizard), Template('Phoenix', _drawPhoenix), Template('RainbowBridge', _drawRainbowBridge),
         ];
       default:
         return [Template('Blank', _drawBlank)];
@@ -460,6 +452,217 @@ class TemplateScreen extends StatelessWidget {
     canvas.drawCircle(Offset(w * 0.5, h * 0.52), w * 0.12, paint);
     canvas.drawLine(Offset(w * 0.15, h * 0.45), Offset(w * 0.0, h * 0.4), paint);
     canvas.drawLine(Offset(w * 0.85, h * 0.45), Offset(w, h * 0.4), paint);
+  }
+
+  void _drawElephant(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.4), w * 0.2, paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.2, h * 0.35, w * 0.15, h * 0.15), paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.65, h * 0.35, w * 0.15, h * 0.15), paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.6), Offset(w * 0.5, h * 0.85), paint);
+  }
+
+  void _drawGiraffe(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.25), w * 0.12, paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.37), Offset(w * 0.5, h * 0.7), paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.5), Offset(w * 0.3, h * 0.55), paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.55), Offset(w * 0.7, h * 0.5), paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.7), Offset(w * 0.35, h * 0.85), paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.7), Offset(w * 0.65, h * 0.85), paint);
+  }
+
+  void _drawPanda(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.35), w * 0.18, paint);
+    canvas.drawCircle(Offset(w * 0.4, h * 0.3), w * 0.05, paint);
+    canvas.drawCircle(Offset(w * 0.6, h * 0.3), w * 0.05, paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.3, h * 0.55, w * 0.4, h * 0.3), paint);
+  }
+
+  void _drawTiger(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.35), w * 0.2, paint);
+    final path = Path();
+    for (int i = 0; i < 6; i++) {
+      final angle = (i * 60) * pi / 180;
+      path.addOval(Rect.fromCircle(center: Offset(w * 0.5 + cos(angle) * w * 0.2, h * 0.35 + sin(angle) * w * 0.2), radius: w * 0.025));
+    }
+    canvas.drawPath(path, paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.3, h * 0.55, w * 0.4, h * 0.3), paint);
+  }
+
+  void _drawLion(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.35), w * 0.18, paint);
+    canvas.drawCircle(Offset(w * 0.5, h * 0.35), w * 0.25, paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.3, h * 0.55, w * 0.4, h * 0.3), paint);
+  }
+
+  void _drawFox(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.4), w * 0.18, paint);
+    final leftEar = Path()..moveTo(w * 0.32, h * 0.2)..lineTo(w * 0.38, h * 0.05)..lineTo(w * 0.45, h * 0.25);
+    final rightEar = Path()..moveTo(w * 0.68, h * 0.2)..lineTo(w * 0.62, h * 0.05)..lineTo(w * 0.55, h * 0.25);
+    canvas.drawPath(leftEar, paint);
+    canvas.drawPath(rightEar, paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.3, h * 0.55, w * 0.4, h * 0.3), paint);
+  }
+
+  void _drawRainbow(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    for (int i = 0; i < 5; i++) {
+      canvas.drawArc(Rect.fromLTWH(w * 0.1 + i * 4, h * 0.3 + i * 4, w * 0.8 - i * 8, h * 0.5 - i * 8), pi, pi, false, paint);
+    }
+  }
+
+  void _drawRiver(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    final path = Path()..moveTo(0, h * 0.3)..quadraticBezierTo(w * 0.3, h * 0.5, w * 0.5, h * 0.3)..quadraticBezierTo(w * 0.7, h * 0.1, w, h * 0.3)..lineTo(w, h * 0.6)..quadraticBezierTo(w * 0.7, h * 0.4, w * 0.5, h * 0.6)..quadraticBezierTo(w * 0.3, h * 0.8, 0, h * 0.6)..close();
+    canvas.drawPath(path, paint);
+  }
+
+  void _drawVolcano(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    final path = Path()..moveTo(w * 0.2, h * 0.8)..lineTo(w * 0.5, h * 0.2)..lineTo(w * 0.8, h * 0.8)..close();
+    canvas.drawPath(path, paint);
+    canvas.drawCircle(Offset(w * 0.5, h * 0.2), w * 0.08, paint);
+  }
+
+  void _drawCloud(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.3, h * 0.5), w * 0.15, paint);
+    canvas.drawCircle(Offset(w * 0.5, h * 0.4), w * 0.2, paint);
+    canvas.drawCircle(Offset(w * 0.7, h * 0.5), w * 0.15, paint);
+    canvas.drawLine(Offset(w * 0.3, h * 0.6), Offset(w * 0.7, h * 0.6), paint);
+  }
+
+  void _drawLeaf(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    final path = Path()..moveTo(w * 0.5, h * 0.8)..quadraticBezierTo(w * 0.2, h * 0.5, w * 0.5, h * 0.2)..quadraticBezierTo(w * 0.8, h * 0.5, w * 0.5, h * 0.8);
+    canvas.drawPath(path, paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.8), Offset(w * 0.5, h * 0.4), paint);
+  }
+
+  void _drawCactus(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawRect(Rect.fromLTWH(w * 0.4, h * 0.3, w * 0.2, h * 0.5), paint);
+    canvas.drawRect(Rect.fromLTWH(w * 0.2, h * 0.4, w * 0.2, h * 0.15), paint);
+    canvas.drawRect(Rect.fromLTWH(w * 0.6, h * 0.5, w * 0.2, h * 0.15), paint);
+  }
+
+  void _drawHelicopter(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawOval(Rect.fromLTWH(w * 0.3, h * 0.4, w * 0.4, h * 0.25), paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.4), Offset(w * 0.5, h * 0.15), paint);
+    canvas.drawLine(Offset(w * 0.1, h * 0.15), Offset(w * 0.9, h * 0.15), paint);
+  }
+
+  void _drawShip(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    final hull = Path()..moveTo(w * 0.15, h * 0.6)..lineTo(w * 0.85, h * 0.6)..lineTo(w * 0.75, h * 0.8)..lineTo(w * 0.25, h * 0.8)..close();
+    canvas.drawPath(hull, paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.6), Offset(w * 0.5, h * 0.2), paint);
+    final sail = Path()..moveTo(w * 0.5, h * 0.2)..lineTo(w * 0.7, h * 0.45)..lineTo(w * 0.5, h * 0.45)..close();
+    canvas.drawPath(sail, paint);
+  }
+
+  void _drawTractor(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawRect(Rect.fromLTWH(w * 0.2, h * 0.5, w * 0.5, h * 0.2), paint);
+    canvas.drawRect(Rect.fromLTWH(w * 0.6, h * 0.55, w * 0.15, h * 0.15), paint);
+    canvas.drawCircle(Offset(w * 0.35, h * 0.72), w * 0.08, paint);
+    canvas.drawCircle(Offset(w * 0.7, h * 0.72), w * 0.1, paint);
+  }
+
+  void _drawMotorcycle(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.3, h * 0.65), w * 0.12, paint);
+    canvas.drawCircle(Offset(w * 0.7, h * 0.65), w * 0.12, paint);
+    canvas.drawLine(Offset(w * 0.3, h * 0.65), Offset(w * 0.7, h * 0.65), paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.45), Offset(w * 0.5, h * 0.65), paint);
+  }
+
+  void _drawSubmarine(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawOval(Rect.fromLTWH(w * 0.2, h * 0.4, w * 0.6, h * 0.3), paint);
+    canvas.drawCircle(Offset(w * 0.4, h * 0.55), w * 0.08, paint);
+    canvas.drawLine(Offset(w * 0.6, h * 0.55), Offset(w * 0.8, h * 0.45), paint);
+  }
+
+  void _drawHotAirBalloon(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.35), w * 0.25, paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.6), Offset(w * 0.5, h * 0.75), paint);
+    canvas.drawRect(Rect.fromLTWH(w * 0.4, h * 0.75, w * 0.2, h * 0.1), paint);
+  }
+
+  void _drawWand(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawLine(Offset(w * 0.3, h * 0.8), Offset(w * 0.6, h * 0.2), paint);
+    
+  }
+
+  void _drawFairy(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.35), w * 0.15, paint);
+    canvas.drawOval(Rect.fromLTWH(w * 0.35, h * 0.5, w * 0.3, h * 0.3), paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.2), Offset(w * 0.7, h * 0.1), paint);
+  }
+
+  void _drawMermaid(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.3), w * 0.15, paint);
+    final body = Path()..moveTo(w * 0.5, h * 0.45)..quadraticBezierTo(w * 0.3, h * 0.6, w * 0.4, h * 0.8)..lineTo(w * 0.6, h * 0.8)..quadraticBezierTo(w * 0.7, h * 0.6, w * 0.5, h * 0.45);
+    canvas.drawPath(body, paint);
+  }
+
+  void _drawWizard(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.35), w * 0.15, paint);
+    final hat = Path()..moveTo(w * 0.35, h * 0.35)..lineTo(w * 0.5, h * 0.05)..lineTo(w * 0.65, h * 0.35)..close();
+    canvas.drawPath(hat, paint);
+    canvas.drawLine(Offset(w * 0.5, h * 0.5), Offset(w * 0.5, h * 0.85), paint);
+  }
+
+  void _drawPhoenix(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    canvas.drawCircle(Offset(w * 0.5, h * 0.4), w * 0.15, paint);
+    final wing = Path()..moveTo(w * 0.4, h * 0.4)..quadraticBezierTo(w * 0.1, h * 0.2, w * 0.2, h * 0.5)..quadraticBezierTo(w * 0.4, h * 0.5, w * 0.5, h * 0.4);
+    canvas.drawPath(wing, paint);
+    final tail = Path()..moveTo(w * 0.5, h * 0.55)..quadraticBezierTo(w * 0.8, h * 0.7, w * 0.9, h * 0.9)..quadraticBezierTo(w * 0.7, h * 0.8, w * 0.5, h * 0.6);
+    canvas.drawPath(tail, paint);
+  }
+
+  void _drawRainbowBridge(Canvas canvas, Size size) {
+    final paint = Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 3;
+    final w = size.width, h = size.height;
+    final path = Path()..moveTo(w * 0.1, h * 0.8)..quadraticBezierTo(w * 0.5, h * 0.1, w * 0.9, h * 0.8);
+    canvas.drawPath(path, paint);
+    canvas.drawLine(Offset(w * 0.1, h * 0.8), Offset(w * 0.9, h * 0.8), paint);
   }
 
   void _drawBlank(Canvas canvas, Size size) {

@@ -700,13 +700,15 @@ class ColoringScreen extends StatefulWidget {
 
 class _ColoringScreenState extends State<ColoringScreen> {
   Color selectedColor = Colors.red;
+  double brushSize = 8;
   final List<Color> colors = const [
     Colors.red, Colors.blue, Colors.green, Colors.yellow,
     Colors.orange, Colors.purple, Colors.pink, Colors.brown,
     Colors.black, Colors.white, Colors.grey, Colors.teal,
   ];
 
-  final List<Color> usedColors = [];
+  final List<Map<String, dynamic>> strokes = [];
+  final List<Offset> currentStroke = [];
   DateTime? startTime;
   bool finished = false;
   int score = 0;
@@ -721,7 +723,7 @@ class _ColoringScreenState extends State<ColoringScreen> {
     final endTime = DateTime.now();
     final duration = endTime.difference(startTime!);
     final timeScore = duration.inSeconds < 30 ? 30 : duration.inSeconds < 60 ? 20 : 10;
-    final colorScore = min(usedColors.length * 5, 40);
+    final colorScore = min(colors.indexOf(selectedColor) >= 0 ? 12 : 0, 40);
     score = timeScore + colorScore + 30;
     setState(() => finished = true);
     final prefs = await SharedPreferences.getInstance();
@@ -737,7 +739,7 @@ class _ColoringScreenState extends State<ColoringScreen> {
         score: score,
         template: widget.template.name,
         categoryName: widget.categoryName,
-        usedColors: usedColors,
+        usedColors: const [Colors.red, Colors.blue],
         duration: duration,
       ),
     );
@@ -752,6 +754,22 @@ class _ColoringScreenState extends State<ColoringScreen> {
         actions: [
           if (!finished)
             IconButton(
+              icon: const Icon(Icons.undo, color: Colors.black87),
+              onPressed: () {
+                setState(() {
+                  if (strokes.isNotEmpty) strokes.removeLast();
+                });
+              },
+            ),
+          if (!finished)
+            IconButton(
+              icon: const Icon(Icons.delete_outline, color: Colors.red),
+              onPressed: () {
+                setState(() => strokes.clear());
+              },
+            ),
+          if (!finished)
+            IconButton(
               icon: const Icon(Icons.check_circle, color: Colors.green),
               onPressed: _finishColoring,
             )
@@ -763,47 +781,76 @@ class _ColoringScreenState extends State<ColoringScreen> {
               children: [
                 Expanded(
                   child: GestureDetector(
-                    onTapUp: (details) {
+                    onPanStart: (details) {
                       final box = context.findRenderObject() as RenderBox?;
                       if (box == null) return;
                       setState(() {
-                        selectedColor = colors[((details.localPosition.dx / box.size.width * colors.length).floor()) % colors.length];
-                        if (!usedColors.contains(selectedColor)) usedColors.add(selectedColor);
+                        currentStroke.clear();
+                        currentStroke.add(details.localPosition);
+                      });
+                    },
+                    onPanUpdate: (details) {
+                      final box = context.findRenderObject() as RenderBox?;
+                      if (box == null) return;
+                      setState(() {
+                        currentStroke.add(details.localPosition);
+                      });
+                    },
+                    onPanEnd: (details) {
+                      setState(() {
+                        strokes.add({
+                          'points': List<Offset>.from(currentStroke),
+                          'color': selectedColor,
+                          'width': brushSize,
+                        });
+                        currentStroke.clear();
                       });
                     },
                     child: CustomPaint(
-                      painter: SketchPainter(widget.template, selectedColor),
+                      painter: DrawingPainter(widget.template, strokes, currentStroke, selectedColor, brushSize),
                       child: Container(),
                     ),
                   ),
                 ),
                 Container(
-                  height: 100,
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  height: 120,
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                   decoration: BoxDecoration(
                     color: Colors.white,
                     boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 8)],
                   ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                    children: colors.map((color) {
-                      return GestureDetector(
-                        onTap: () => setState(() => selectedColor = color),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: color,
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: selectedColor == color ? Colors.black : Colors.grey.shade300,
-                              width: selectedColor == color ? 3 : 1,
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: colors.map((color) {
+                          return GestureDetector(
+                            onTap: () => setState(() => selectedColor = color),
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 200),
+                              width: 38,
+                              height: 38,
+                              decoration: BoxDecoration(
+                                color: color,
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: selectedColor == color ? Colors.black : Colors.grey.shade300,
+                                  width: selectedColor == color ? 3 : 1,
+                                ),
+                              ),
                             ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
+                          );
+                        }).toList(),
+                      ),
+                      Slider(
+                        value: brushSize,
+                        min: 4,
+                        max: 24,
+                        divisions: 10,
+                        label: '${brushSize.round()}',
+                        onChanged: (v) => setState(() => brushSize = v),
+                      ),
+                    ],
                   ),
                 ),
               ],
@@ -812,10 +859,15 @@ class _ColoringScreenState extends State<ColoringScreen> {
   }
 }
 
-class SketchPainter extends CustomPainter {
+class DrawingPainter extends CustomPainter {
   final Template template;
+  final List<Map<String, dynamic>> strokes;
+  final List<Offset> currentStroke;
   final Color selectedColor;
-  const SketchPainter(this.template, this.selectedColor);
+  final double brushSize;
+
+  DrawingPainter(this.template, this.strokes, this.currentStroke, this.selectedColor, this.brushSize);
+
   @override
   void paint(Canvas canvas, Size size) {
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), Paint()..color = Colors.white);
@@ -824,9 +876,33 @@ class SketchPainter extends CustomPainter {
     template.draw(tempCanvas, size);
     final picture = recorder.endRecording();
     canvas.drawPicture(picture);
-    canvas.drawCircle(Offset(20, size.height - 20), 16, Paint()..color = selectedColor);
-    canvas.drawCircle(Offset(20, size.height - 20), 16, Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 2);
+
+    for (final stroke in strokes) {
+      _drawStroke(canvas, stroke['points'], stroke['color'], stroke['width']);
+    }
+    if (currentStroke.isNotEmpty) {
+      _drawStroke(canvas, currentStroke, selectedColor, brushSize);
+    }
+
+    canvas.drawCircle(Offset(24, size.height - 24), 18, Paint()..color = selectedColor);
+    canvas.drawCircle(Offset(24, size.height - 24), 18, Paint()..color = Colors.black..style = PaintingStyle.stroke..strokeWidth = 2);
   }
+
+  void _drawStroke(Canvas canvas, List<Offset> points, Color color, double width) {
+    if (points.length < 2) return;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = width
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeCap.round;
+    final path = Path()..moveTo(points.first.dx, points.first.dy);
+    for (int i = 1; i < points.length; i++) {
+      path.lineTo(points[i].dx, points[i].dy);
+    }
+    canvas.drawPath(path, paint);
+  }
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
 }

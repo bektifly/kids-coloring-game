@@ -1748,7 +1748,7 @@ Future<ProductDetails?> _findPremiumProduct() async {
 Future<void> _purchasePremium(ProductDetails product) async {
   final purchaseParam = PurchaseParam(productDetails: product);
   final result = await InAppPurchase.instance.buyNonConsumable(purchaseParam: purchaseParam);
-  if (result == PurchaseStatus.success || result == PurchaseStatus.restored) {
+  if (result == PurchaseStatus.purchased || result == PurchaseStatus.restored) {
     await _setPremiumUnlocked(true);
   }
 }

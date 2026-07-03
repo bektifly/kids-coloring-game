@@ -21,20 +21,20 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   assets:
-    - assets/sounds/pop.mp3
-    - assets/sounds/color_red.mp3
-    - assets/sounds/color_blue.mp3
-    - assets/sounds/color_green.mp3
-    - assets/sounds/color_yellow.mp3
-    - assets/sounds/color_orange.mp3
-    - assets/sounds/color_purple.mp3
-    - assets/sounds/color_pink.mp3
-    - assets/sounds/color_brown.mp3
-    - assets/sounds/color_black.mp3
-    - assets/sounds/color_white.mp3
-    - assets/sounds/color_grey.mp3
-    - assets/sounds/color_teal.mp3
-    - assets/sounds/great_job.mp3
-    - assets/sounds/excellent.mp3
-    - assets/sounds/amazing.mp3
-    - assets/sounds/congratulations.mp3
+    - assets/sounds/pop.wav
+    - assets/sounds/color_red.wav
+    - assets/sounds/color_blue.wav
+    - assets/sounds/color_green.wav
+    - assets/sounds/color_yellow.wav
+    - assets/sounds/color_orange.wav
+    - assets/sounds/color_purple.wav
+    - assets/sounds/color_pink.wav
+    - assets/sounds/color_brown.wav
+    - assets/sounds/color_black.wav
+    - assets/sounds/color_white.wav
+    - assets/sounds/color_grey.wav
+    - assets/sounds/color_teal.wav
+    - assets/sounds/great_job.wav
+    - assets/sounds/excellent.wav
+    - assets/sounds/amazing.wav
+    - assets/sounds/congratulations.wav

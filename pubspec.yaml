@@ -11,6 +11,7 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.6
   shared_preferences: ^2.2.2
+  audioplayers: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -19,3 +20,21 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/sounds/pop.mp3
+    - assets/sounds/color_red.mp3
+    - assets/sounds/color_blue.mp3
+    - assets/sounds/color_green.mp3
+    - assets/sounds/color_yellow.mp3
+    - assets/sounds/color_orange.mp3
+    - assets/sounds/color_purple.mp3
+    - assets/sounds/color_pink.mp3
+    - assets/sounds/color_brown.mp3
+    - assets/sounds/color_black.mp3
+    - assets/sounds/color_white.mp3
+    - assets/sounds/color_grey.mp3
+    - assets/sounds/color_teal.mp3
+    - assets/sounds/great_job.mp3
+    - assets/sounds/excellent.mp3
+    - assets/sounds/amazing.mp3
+    - assets/sounds/congratulations.mp3

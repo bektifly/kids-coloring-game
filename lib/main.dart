@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'dart:ui' as ui;
 import 'dart:math';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 void main() {
   runApp(const ColoringWorld());
@@ -732,6 +733,9 @@ class _ColoringScreenState extends State<ColoringScreen> {
   DateTime? startTime;
   bool finished = false;
   int score = 0;
+  int stars = 0;
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  bool _showSparkle = false;
 
   @override
   void initState() {
@@ -739,24 +743,62 @@ class _ColoringScreenState extends State<ColoringScreen> {
     startTime = DateTime.now();
   }
 
+  Future<void> _playSound(String path) async {
+    try {
+      await _audioPlayer.play(AssetSource('sounds/$path'));
+    } catch (e) {
+      debugPrint('Sound error: $e');
+    }
+  }
+
+  Future<void> _selectColor(Color color) async {
+    final names = <Color, String>{
+      Colors.red: 'red', Colors.blue: 'blue', Colors.green: 'green',
+      Colors.yellow: 'yellow', Colors.orange: 'orange', Colors.purple: 'purple',
+      Colors.pink: 'pink', Colors.brown: 'brown', Colors.black: 'black',
+      Colors.white: 'white', Colors.grey: 'grey', Colors.teal: 'teal',
+    };
+    await _playSound('pop.mp3');
+    final name = names[color];
+    if (name != null) await _playSound('color_$name.mp3');
+    setState(() {
+      selectedColor = color;
+      _showSparkle = true;
+    });
+    Future.delayed(const Duration(milliseconds: 400), () {
+      if (mounted) setState(() => _showSparkle = false);
+    });
+  }
+
   Future<void> _finishColoring() async {
     final endTime = DateTime.now();
     final duration = endTime.difference(startTime!);
     final timeScore = duration.inSeconds < 30 ? 30 : duration.inSeconds < 60 ? 20 : 10;
-    final colorScore = min(colors.indexOf(selectedColor) >= 0 ? 12 : 0, 40);
-    score = timeScore + colorScore + 30;
+    score = timeScore + 30;
     setState(() => finished = true);
     final prefs = await SharedPreferences.getInstance();
     final key = 'leaderboard_${widget.categoryName}_${widget.template.name}';
     final existing = prefs.getStringList(key) ?? [];
     existing.add('$score|${DateTime.now().toIso8601String()}');
     await prefs.setStringList(key, existing);
+    stars = score >= 80 ? 3 : score >= 50 ? 2 : 1;
+    await _playSound('great_job.mp3');
+    Future.delayed(const Duration(milliseconds: 600), () async {
+      await _playSound('excellent.mp3');
+    });
+    Future.delayed(const Duration(milliseconds: 1200), () async {
+      await _playSound('amazing.mp3');
+    });
+    Future.delayed(const Duration(milliseconds: 1800), () async {
+      await _playSound('congratulations.mp3');
+    });
     if (!mounted) return;
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (_) => ResultDialog(
         score: score,
+        stars: stars,
         template: widget.template.name,
         categoryName: widget.categoryName,
         usedColors: const [Colors.red, Colors.blue],
@@ -797,84 +839,105 @@ class _ColoringScreenState extends State<ColoringScreen> {
       ),
       body: finished
           ? Center(child: Text('Score: $score', style: const TextStyle(fontSize: 32)))
-          : Column(
+          : Stack(
               children: [
-                Expanded(
-                  child: GestureDetector(
-                    onPanStart: (details) {
-                      final box = context.findRenderObject() as RenderBox?;
-                      if (box == null) return;
-                      setState(() {
-                        currentStroke.clear();
-                        currentStroke.add(details.localPosition);
-                      });
-                    },
-                    onPanUpdate: (details) {
-                      final box = context.findRenderObject() as RenderBox?;
-                      if (box == null) return;
-                      setState(() {
-                        currentStroke.add(details.localPosition);
-                      });
-                    },
-                    onPanEnd: (details) {
-                      setState(() {
-                        strokes.add({
-                          'points': List<Offset>.from(currentStroke),
-                          'color': selectedColor,
-                          'width': brushSize,
-                        });
-                        currentStroke.clear();
-                      });
-                    },
-                    child: CustomPaint(
-                      painter: DrawingPainter(widget.template, strokes, currentStroke, selectedColor, brushSize),
-                      child: Container(),
+                Column(
+                  children: [
+                    Expanded(
+                      child: GestureDetector(
+                        onPanStart: (details) {
+                          final box = context.findRenderObject() as RenderBox?;
+                          if (box == null) return;
+                          setState(() {
+                            currentStroke.clear();
+                            currentStroke.add(details.localPosition);
+                          });
+                        },
+                        onPanUpdate: (details) {
+                          final box = context.findRenderObject() as RenderBox?;
+                          if (box == null) return;
+                          setState(() {
+                            currentStroke.add(details.localPosition);
+                          });
+                        },
+                        onPanEnd: (details) {
+                          setState(() {
+                            strokes.add({
+                              'points': List<Offset>.from(currentStroke),
+                              'color': selectedColor,
+                              'width': brushSize,
+                            });
+                            currentStroke.clear();
+                          });
+                        },
+                        child: CustomPaint(
+                          painter: DrawingPainter(widget.template, strokes, currentStroke, selectedColor, brushSize),
+                          child: Container(),
+                        ),
+                      ),
+                    ),
+                    Container(
+                      height: 120,
+                      padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 8)],
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: colors.map((color) {
+                              return GestureDetector(
+                                onTap: () => _selectColor(color),
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: color,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: selectedColor == color ? Colors.black : Colors.grey.shade300,
+                                      width: selectedColor == color ? 3 : 1,
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          Slider(
+                            value: brushSize,
+                            min: 4,
+                            max: 24,
+                            divisions: 10,
+                            label: '${brushSize.round()}',
+                            onChanged: (v) => setState(() => brushSize = v),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                if (_showSparkle)
+                  const Positioned.fill(
+                    child: IgnorePointer(
+                      child: SparkleOverlay(),
                     ),
                   ),
-                ),
-                Container(
-                  height: 120,
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    boxShadow: [BoxShadow(color: Colors.grey.shade300, blurRadius: 8)],
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: colors.map((color) {
-                          return GestureDetector(
-                            onTap: () => setState(() => selectedColor = color),
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 200),
-                              width: 38,
-                              height: 38,
-                              decoration: BoxDecoration(
-                                color: color,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: selectedColor == color ? Colors.black : Colors.grey.shade300,
-                                  width: selectedColor == color ? 3 : 1,
-                                ),
-                              ),
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                      Slider(
-                        value: brushSize,
-                        min: 4,
-                        max: 24,
-                        divisions: 10,
-                        label: '${brushSize.round()}',
-                        onChanged: (v) => setState(() => brushSize = v),
-                      ),
-                    ],
-                  ),
-                ),
               ],
             ),
+    );
+  }
+}
+
+class SparkleOverlay extends StatelessWidget {
+  const SparkleOverlay({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Text('✨', style: TextStyle(fontSize: 72)),
     );
   }
 }
@@ -929,6 +992,7 @@ class DrawingPainter extends CustomPainter {
 
 class ResultDialog extends StatelessWidget {
   final int score;
+  final int stars;
   final String template;
   final String categoryName;
   final List<Color> usedColors;
@@ -936,6 +1000,7 @@ class ResultDialog extends StatelessWidget {
   const ResultDialog({
     super.key,
     required this.score,
+    required this.stars,
     required this.template,
     required this.categoryName,
     required this.usedColors,
@@ -945,20 +1010,25 @@ class ResultDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('🎨 Coloring Complete!'),
+      title: const Text('🎉 Congratulations!'),
       content: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Text('Template: $template', style: const TextStyle(fontSize: 18)),
           const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: List.generate(3, (i) {
+              return Icon(Icons.star, color: i < stars ? Colors.amber : Colors.grey, size: 36);
+            }),
+          ),
+          const SizedBox(height: 12),
           Text('Score: $score/100',
               style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.purple)),
           const SizedBox(height: 12),
           Text('Time: ${duration.inMinutes}m ${duration.inSeconds % 60}s'),
-          Text('Colors used: ${usedColors.length}'),
-          const SizedBox(height: 12),
-          const Text('Assessment:', style: TextStyle(fontWeight: FontWeight.bold)),
-          Text(_getAssessment(), textAlign: TextAlign.center),
+          const SizedBox(height: 8),
+          const Text('🌟 Amazing work!'),
         ],
       ),
       actions: [
@@ -974,13 +1044,6 @@ class ResultDialog extends StatelessWidget {
         ),
       ],
     );
-  }
-
-  String _getAssessment() {
-    if (score >= 90) return '🌟 Perfect! Your coloring looks like a real masterpiece!';
-    if (score >= 70) return '👏 Great job! Very nice coloring!';
-    if (score >= 50) return '👍 Good effort! Keep practicing!';
-    return '🌈 Nice try! Try using more colors next time!';
   }
 }
 
